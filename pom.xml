@@ -15,7 +15,7 @@
 	<description>List tracker for watched IMDB Top 250 films</description>
 
 	<properties>
-		<java.version>8</java.version>
+		<java.version>14</java.version>
 	</properties>
 
 	<dependencies>
