@@ -5,6 +5,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ public class MovieService {
                 .map(uri -> {
                     try {
                         return Jsoup.connect(uri)
+                                .header(HttpHeaders.ACCEPT_LANGUAGE, "en-GB")
                                 .get()
                                 .select(".lister-item");
                     } catch (IOException e) {
