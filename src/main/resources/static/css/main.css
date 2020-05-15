@@ -70,3 +70,11 @@ body {
     color: #fff;
     margin-right: 1em;
 }
+
+.filter {
+    margin: 0 0.25em 0.25em 0;
+}
+
+.hide {
+    display: none;
+}

@@ -20,11 +20,19 @@
             Please provide check at least one box to save
         </div>
         <div class="row mb-3">
-            <div class="col-sm-12 col-md-8 offset-md-2 pl-0">
-                <strong>Watched: </strong>
-                <span id="watchedCount" th:text="${watchedList != null ? watchedList.watchedCount() : 0}"></span>
-                <span>/ </span>
-                <span>250</span>
+            <div class="col-sm-12 col-md-8 offset-md-2">
+                <div>
+                    <strong>Watched: </strong>
+                    <span id="watchedCount" th:text="${watchedList != null ? watchedList.watchedCount() : 0}"></span>
+                    <span>/ </span>
+                    <span>250</span>
+                </div>
+                <div class="mt-4">
+                    <input id="search" class="form-control" type="text" placeholder="Enter movie title to search..." />
+                </div>
+                <div class="mt-2">
+                    <span class="filter btn btn-outline-info" th:each="genre : ${genres}" th:text="${genre}"></span>
+                </div>
             </div>
         </div>
         <div class="row" th:each="movie : ${movies}">

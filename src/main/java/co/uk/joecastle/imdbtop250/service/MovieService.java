@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,6 +59,14 @@ public class MovieService {
                             new Movie.Person(person.text(), "http://www.imdb.com" + person.attr("href"))).collect(Collectors.toList()));
                     return movie;
                 }))
+                .collect(Collectors.toList());
+    }
+
+    public List<String> getAllGenres(List<Movie> movies) {
+        return movies.stream()
+                .flatMap(movie -> Arrays.stream(movie.getGenre().split(", ")))
+                .distinct()
+                .sorted()
                 .collect(Collectors.toList());
     }
 

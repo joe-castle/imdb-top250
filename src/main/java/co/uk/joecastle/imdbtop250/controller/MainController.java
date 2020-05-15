@@ -26,8 +26,12 @@ public class MainController {
 
     @GetMapping("/")
     public ModelAndView main() throws Exception {
-        Map<String, Object> model = new HashMap<>(Map.of("movies", movieService.getMovies()));
+        List<Movie> movies = movieService.getMovies();
         User user = userService.getUser();
+
+        Map<String, Object> model = new HashMap<>(Map.of(
+                "movies", movies,
+                "genres", movieService.getAllGenres(movies)));
 
         if (user != null) {
             model.put("watchedList", user.getWatchedList());
