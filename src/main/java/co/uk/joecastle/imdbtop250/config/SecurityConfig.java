@@ -14,8 +14,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests()
                 .antMatchers("/movies/**").authenticated()
             .and()
-                .oauth2Login()
-            .and()
+                .oauth2Login(config -> config.defaultSuccessUrl("/", true))
                 .logout().logoutSuccessUrl("/")
             .and()
                 .csrf().disable();
