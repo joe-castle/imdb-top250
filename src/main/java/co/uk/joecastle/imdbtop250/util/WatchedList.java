@@ -20,4 +20,10 @@ public class WatchedList extends ArrayList<Watched> {
                 .anyMatch(watched -> watched.getTitle().equals(title) && watched.getWatched());
     }
 
+    public long watchedCount() {
+        return stream()
+                .filter(Watched::getWatched)
+                .count();
+    }
+
 }

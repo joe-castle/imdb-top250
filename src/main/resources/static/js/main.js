@@ -1,3 +1,5 @@
+const watchedCount = document.getElementById('watchedCount')
+
 Array.from(document.getElementsByClassName('movie')).forEach(el => {
   el.addEventListener('click', event => {
     const movie = el.id
@@ -10,8 +12,13 @@ Array.from(document.getElementsByClassName('movie')).forEach(el => {
         console.log(`Res: ${res}`)
         if (res) {
           el.classList.toggle('watched')
+          watchedCount.textContent = getWatchedCount()
         }
       })
       .catch(err => console.error(err))
   })
 })
+
+function getWatchedCount () {
+    return document.getElementsByClassName('watched').length
+}
