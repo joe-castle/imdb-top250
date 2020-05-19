@@ -5,7 +5,7 @@ function getWatchedCount() {
   return document.getElementsByClassName('watched').length
 }
 
-function updateMoviesFromFiltersAndSearch() {
+function updateMoviesFromFiltersAndSearchAndHidden() {
   const activeFilters = Object.keys(filters)
     .filter(filter => filters[filter])
 
@@ -13,18 +13,25 @@ function updateMoviesFromFiltersAndSearch() {
     movie.classList.remove('hide')
   })
 
-  if (searchTerm.length > 0) {
-      const search = new RegExp(searchTerm, 'gi')
+  const predicates = []
 
-      movies.filter(movie => !search.test(movie.id))
-        .forEach(movie => movie.classList.add('hide'))
+  if (hideWatched) {
+    predicates.push(movie => movie.classList.contains('watched'))
+  }
+
+  if (searchTerm.length > 0) {
+    predicates.push(movie => !(new RegExp(searchTerm, 'gi').test(movie.id)))
   }
 
   if (activeFilters.length > 0) {
-      movies.filter(movie => !activeFilters.every(filter =>
-        movie.children[1].children[1].children[0].children[3].children[4].textContent.includes(filter))
-      )
-      .forEach(movie => movie.classList.add('hide'))
+    predicates.push(movie => !activeFilters.every(filter =>
+        movie.children[1].children[1].children[0].children[3].children[4].textContent.includes(filter)))
+  }
+
+  if (predicates.length > 0) {
+      movies
+        .filter(movie => predicates.some(predicate => predicate(movie)))
+        .forEach(movie => movie.classList.add('hide'))
   }
 }
 
@@ -41,6 +48,7 @@ movies.forEach(el => {
         if (res) {
           el.classList.toggle('watched')
           watchedCount.textContent = getWatchedCount()
+          updateMoviesFromFiltersAndSearchAndHidden()
         }
       })
       .catch(err => console.error(err))
@@ -56,7 +64,7 @@ Array.from(document.getElementsByClassName('filter')).forEach(el => {
   el.addEventListener('click', event => {
     el.classList.toggle('active')
     filters[filter] = !filters[filter]
-    updateMoviesFromFiltersAndSearch()
+    updateMoviesFromFiltersAndSearchAndHidden()
   })
 })
 
@@ -64,5 +72,13 @@ let searchTerm = ''
 
 document.getElementById('search').addEventListener('keyup', event => {
     searchTerm = event.target.value;
-    updateMoviesFromFiltersAndSearch()
+    updateMoviesFromFiltersAndSearchAndHidden()
+})
+
+let hideWatched = false
+
+document.getElementById('hide-watched').addEventListener('click', event => {
+    hideWatched = !hideWatched
+    event.target.classList.toggle('active')
+    updateMoviesFromFiltersAndSearchAndHidden()
 })
