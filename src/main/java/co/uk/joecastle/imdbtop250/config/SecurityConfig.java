@@ -1,8 +1,6 @@
 package co.uk.joecastle.imdbtop250.config;
 
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
@@ -13,10 +11,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
                 .antMatchers("/movies/**").authenticated()
-            .and()
+                .and()
                 .oauth2Login(config -> config.defaultSuccessUrl("/", true))
                 .logout().logoutSuccessUrl("/")
-            .and()
+                .and()
                 .csrf().disable();
     }
 

@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -18,15 +20,39 @@ import java.util.stream.Collectors;
 @Service
 public class MovieService {
 
-    private final List<String> uris = List.of("https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&view=advanced",
+    private static final String IMDB_TOP250_URI = "https://www.imdb.com/chart/top/";
+    private static final List<String> ENHANCED_URIS = List.of("https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&view=advanced",
             "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=51&ref_=adv_nxt",
             "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=101&ref_=adv_nxt",
             "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=151&ref_=adv_nxt",
-            "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=201&ref_=adv_nxt");
+            "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=201&ref_=adv_nxt",
+            "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=251&ref_=adv_nxt");
 
     @Cacheable("movies")
     public List<Movie> getMovies() {
-        return uris
+        try {
+            Map<String, Movie> enhancedMovies = getEnhancedMovies();
+
+            return Jsoup.connect(IMDB_TOP250_URI)
+                    .header(HttpHeaders.ACCEPT_LANGUAGE, "en-GB")
+                    .get()
+                    .select(".lister-list tr")
+                    .stream()
+                    .map(element -> {
+                        Movie movie = enhancedMovies.get(element.select(".titleColumn a").get(0).text());
+                        movie.setPosition(Integer.parseInt(element.select(".titleColumn").get(0).text().replaceAll("\\..++", "")));
+                        return movie;
+                    })
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("error getting titles with uri: {uri}");
+        }
+    }
+
+    @Cacheable("enhancedMovies")
+    public Map<String, Movie> getEnhancedMovies() {
+        return ENHANCED_URIS
                 .stream()
                 .map(uri -> {
                     try {
@@ -41,10 +67,9 @@ public class MovieService {
                 })
                 .flatMap(elements -> elements.stream().map(element -> {
                     Movie movie = new Movie();
-                    movie.setPosition(Integer.parseInt(element.select(".lister-item-index").get(0).text().replaceFirst("\\.", "")));
                     Element title = element.select(".lister-item-header a").get(0);
                     movie.setTitle(title.text());
-                    movie.setImdbUrl("http://www.imdb.com" + title.attr("href"));
+                    movie.setImdbUrl("https://www.imdb.com" + title.attr("href"));
                     movie.setYear(Integer.parseInt(element.select(".lister-item-year").get(0).text().replaceAll(".+(\\d{4}).+", "$1")));
                     Elements content = element.select(".lister-item-content p");
                     movie.setDescription(content.get(1).text());
@@ -54,12 +79,12 @@ public class MovieService {
                     movie.setTime(element.select(".runtime").get(0).text());
                     movie.setGenre(element.select(".genre").get(0).text());
                     Elements people = content.select("a");
-                    movie.setDirector(new Movie.Person(people.get(0).text(), "http://www.imdb.com" + people.get(0).attr("href")));
+                    movie.setDirector(new Movie.Person(people.get(0).text(), "https://www.imdb.com" + people.get(0).attr("href")));
                     movie.setStars(people.subList(1, people.size()).stream().map(person ->
-                            new Movie.Person(person.text(), "http://www.imdb.com" + person.attr("href"))).collect(Collectors.toList()));
+                            new Movie.Person(person.text(), "https://www.imdb.com" + person.attr("href"))).collect(Collectors.toList()));
                     return movie;
                 }))
-                .collect(Collectors.toList());
+                .collect(Collectors.toMap(Movie::getTitle, Function.identity()));
     }
 
     public List<String> getAllGenres(List<Movie> movies) {

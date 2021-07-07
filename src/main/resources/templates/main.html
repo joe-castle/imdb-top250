@@ -10,10 +10,14 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
-        <a class="navbar-brand" href="#">IMDB Top 250 Tracker</a>
-        <a sec:authorize="!isAuthenticated()" class="btn btn-outline-success my-2 my-sm-0" href="/oauth2/authorization/google">Login With Google</a>
-        <span sec:authorize="isAuthenticated()" th:text="'Hello, ' + ${#authentication.getPrincipal().getAttributes().get('given_name')}" class="nav-item"></span>
-        <a sec:authorize="isAuthenticated()" class="btn btn-outline-danger my-2 my-sm-0" href="/logout">Logout</a>
+        <div class="container">
+            <a class="navbar-brand" href="#">IMDB Top 250 Tracker</a>
+            <a class="btn btn-outline-success my-2 my-sm-0" href="/oauth2/authorization/google"
+               sec:authorize="!isAuthenticated()">Login With Google</a>
+            <span class="nav-item" sec:authorize="isAuthenticated()"
+                  th:text="'Hello, ' + ${#authentication.getPrincipal().getAttributes().get('given_name')}"></span>
+            <a class="btn btn-outline-danger my-2 my-sm-0" href="/logout" sec:authorize="isAuthenticated()">Logout</a>
+        </div>
     </nav>
     <main class="container">
         <div class="alert alert-warning" role="alert" th:if="${param.emptyForm == true}">
