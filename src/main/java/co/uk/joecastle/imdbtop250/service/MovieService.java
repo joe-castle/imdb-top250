@@ -41,6 +41,7 @@ public class MovieService {
                     .map(element -> {
                         Movie movie = enhancedMovies.get(element.select(".titleColumn a").get(0).text());
                         movie.setPosition(Integer.parseInt(element.select(".titleColumn").get(0).text().replaceAll("\\..++", "")));
+                        movie.setRating(Double.parseDouble(element.select(".imdbRating strong").get(0).text()));
                         return movie;
                     })
                     .collect(Collectors.toList());
@@ -74,7 +75,6 @@ public class MovieService {
                     Elements content = element.select(".lister-item-content p");
                     movie.setDescription(content.get(1).text());
                     movie.setPosterUrl(parsePosterUrl(element.select(".lister-item-image img").get(0).attr("loadlate")));
-                    movie.setRating(Double.parseDouble(element.select(".ratings-imdb-rating strong").get(0).text()));
                     movie.setCertificate(element.select(".certificate").isEmpty() ? "X" : element.select(".certificate").get(0).text());
                     movie.setTime(element.select(".runtime").get(0).text());
                     movie.setGenre(element.select(".genre").get(0).text());
