@@ -1,5 +1,6 @@
 package co.uk.joecastle.imdbtop250.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,7 +17,10 @@ public class Movie {
     private Integer year;
     private String description;
     private String posterUrl;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Double rating;
+
     private String certificate;
     private String time;
     private String genre;

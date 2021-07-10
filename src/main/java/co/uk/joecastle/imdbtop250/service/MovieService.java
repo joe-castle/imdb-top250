@@ -9,7 +9,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -85,14 +84,6 @@ public class MovieService {
                     return movie;
                 }))
                 .collect(Collectors.toMap(Movie::getTitle, Function.identity()));
-    }
-
-    public List<String> getAllGenres(List<Movie> movies) {
-        return movies.stream()
-                .flatMap(movie -> Arrays.stream(movie.getGenre().split(", ")))
-                .distinct()
-                .sorted()
-                .collect(Collectors.toList());
     }
 
     private String parsePosterUrl(String url) {

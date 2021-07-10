@@ -1,7 +1,9 @@
 package co.uk.joecastle.imdbtop250.service;
 
+import co.uk.joecastle.imdbtop250.converter.UserEntityToUserModel;
 import co.uk.joecastle.imdbtop250.entity.User;
 import co.uk.joecastle.imdbtop250.entity.Watched;
+import co.uk.joecastle.imdbtop250.model.UserModel;
 import co.uk.joecastle.imdbtop250.respository.UserRepository;
 import co.uk.joecastle.imdbtop250.util.WatchedList;
 import lombok.extern.slf4j.Slf4j;
@@ -13,26 +15,31 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final UserEntityToUserModel userEntityToUserModel;
 
-    public boolean updateMovie(String movie) {
+    @Autowired
+    public UserService(UserRepository userRepository, UserEntityToUserModel userEntityToUserModel) {
+        this.userRepository = userRepository;
+        this.userEntityToUserModel = userEntityToUserModel;
+    }
+
+    public UserModel makeFilmWatchedOrNotWatched(String movie) {
         try {
             User user = getUser();
 
             if (user == null) {
-                String email = getEmail();
-
-                userRepository.save(User
+                return userEntityToUserModel.convert(userRepository.save(User
                         .builder()
-                        .email(email)
+                        .email(getEmail())
                         .watchedList(new WatchedList(List.of(Watched.builder().title(movie).watched(true).build())))
-                        .build());
+                        .build()));
             } else {
                 Watched newWatched = Watched.builder().title(movie).watched(true).build();
                 int index = user.getWatchedList().indexOf(newWatched);
@@ -44,28 +51,44 @@ public class UserService {
                     user.getWatchedList().add(newWatched);
                 }
 
-                userRepository.save(user);
+                return userEntityToUserModel.convert(userRepository.save(user));
             }
-
-            return true;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            return false;
+            return null;
         }
     }
 
-    public User getUser() {
-        return userRepository.findByEmail(getEmail());
-    }
+    public UserModel getUserModel() {
+        UserModel model = userEntityToUserModel.convert(getUser());
+        Optional<DefaultOAuth2User> oAuth2USer = getOAuth2USer();
 
-    public String getEmail() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            return (String) ((DefaultOAuth2User) authentication.getPrincipal()).getAttributes().get("email");
+        if (model != null && oAuth2USer.isPresent()) {
+            model.setName(oAuth2USer.get().getName());
+            return model;
         }
 
         return null;
+    }
+
+    private User getUser() {
+        return userRepository.findByEmail(getEmail());
+    }
+
+    private String getEmail() {
+        return getOAuth2USer()
+                .map(defaultOAuth2User -> (String) defaultOAuth2User.getAttributes().get("email"))
+                .orElse(null);
+    }
+
+    private Optional<DefaultOAuth2User> getOAuth2USer() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (!(authentication instanceof AnonymousAuthenticationToken)) {
+            return Optional.ofNullable((DefaultOAuth2User) authentication.getPrincipal());
+        }
+
+        return Optional.empty();
     }
 
 }
