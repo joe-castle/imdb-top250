@@ -2,16 +2,12 @@ import React from 'react'
 import classNames from 'classnames'
 import useSWR from 'swr'
 
-import {fetcher} from './utils'
+import {fetcher, isMovieWatched} from './utils'
 
 import styles from './Movie.module.css'
 
 function Movie({movie}) {
   const {data: user, mutate} = useSWR("/api/v1/user")
-
-  function isMovieWatched(title) {
-    return user?.watchedList.some(movie => movie.title === title && movie.watched === true)
-  }
 
   function updateMovieWatchedStatus(title) {
     if (user?.name) {
@@ -35,7 +31,7 @@ function Movie({movie}) {
   return (
     <div className={classNames("col-sm-8 offset-sm-2", {
       [styles.movie]: true,
-      [styles.watched]: isMovieWatched(movie.title)
+      [styles.watched]: isMovieWatched(user?.watchedList, movie.title)
     })}
          id={movie.title}
          onClick={() => updateMovieWatchedStatus(movie.title)}>

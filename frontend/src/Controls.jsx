@@ -4,7 +4,7 @@ import classNames from 'classnames'
 
 import styles from './Controls.module.css'
 
-function Controls({genres, updateGenreFilter, genreFilter}) {
+function Controls({genres, updateGenreFilter, genreFilter, setHideWatched, hideWatched}) {
   const {data: user} = useSWR("/api/v1/user")
 
   return (
@@ -18,7 +18,10 @@ function Controls({genres, updateGenreFilter, genreFilter}) {
               <span>250</span>
             </div>
               <div className="mt-2">
-              <span id="hide-watched" className="btn btn-outline-primary">Hide Watched</span>
+                <button
+                  onClick={() => setHideWatched(!hideWatched)}
+                  id="hide-watched"
+                  className={classNames("btn btn-outline-primary", { active: hideWatched })}>Hide Watched</button>
             </div>
           </>
         }
