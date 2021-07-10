@@ -8,9 +8,9 @@ import Movie from './Movie'
 
 function createGenresArray(movies) {
   return movies
-  ?.flatMap(movie => movie.genre.split(', '))
-  .filter((genre, index, arr) => arr.indexOf(genre) === index)
-  .sort()
+    ?.flatMap(movie => movie.genre.split(', '))
+    .filter((genre, index, arr) => arr.indexOf(genre) === index)
+    .sort()
 }
 
 function App() {
@@ -31,8 +31,8 @@ function App() {
         <div className="row">
           {!movies && <div className="col-12">Loading Movies</div>}
           {movies
-          ?.filter(genre => genreFilter.length === 0 || genreFilter.includes(genre))
-          .map(movie => <Movie key={movie.title} movie={movie}/>)}
+            ?.filter(movie => genreFilter.length === 0 || genreFilter.every(genre => movie.genre.includes(genre)))
+            .map(movie => <Movie key={movie.title} movie={movie}/>)}
         </div>
       </main>
     </>

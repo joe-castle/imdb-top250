@@ -2,26 +2,32 @@ import React from 'react'
 import classNames from 'classnames'
 import useSWR from 'swr'
 
+import {fetcher} from './utils'
+
 import styles from './Movie.module.css'
 
 function Movie({movie}) {
   const {data: user, mutate} = useSWR("/api/v1/user")
 
   function isMovieWatched(title) {
-    return user?.watchedList.some(movie => movie.title === title && movie.watched)
+    return user?.watchedList.some(movie => movie.title === title && movie.watched === true)
   }
 
   function updateMovieWatchedStatus(title) {
     if (user?.name) {
-      // mutate({
-      //   name: user.name,
-      //   watchedList: [
-      //     ...user.watchedList,
-      //
-      //   ]
-      // })
-      mutate(async () => {
-        return await fetch(`/api/v1/user/movie/${title}`, {method: 'POST'}).then(res => res.json())
+      const index = user.watchedList.findIndex(watched => watched.title === title)
+
+      mutate({
+        name: user.name,
+        watchedList: [
+          ...user.watchedList.slice(0, index),
+          { title, watched: !user.watchedList[index].watched },
+          ...user.watchedList.slice(index + 1)
+        ]
+      }, false)
+
+      mutate(() => {
+        return fetcher(`/api/v1/user/movie/${title}`,  'POST')
       })
     }
   }
@@ -37,11 +43,11 @@ function Movie({movie}) {
         <span>✓</span>
       </div>
       <div className="row">
-        <div className={`col-3 ${styles.pl}`}>
+        <div className={`col-3 pl-0`}>
           <img src={movie.posterUrl} className="img-fluid d-block mx-auto mx-md-0"
                alt={`Movie poster for ${movie.title}`}/>
         </div>
-        <div className={`col-9 ${styles.pl}`}>
+        <div className={`col-9 pl-0`}>
           <div className="mt-3">
             <span>{movie.position}. </span>
             <a href={movie.imdbUrl}>{movie.title}</a>

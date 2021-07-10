@@ -1,5 +1,5 @@
-export async function fetcher(url) {
-  const res = await fetch(url)
+export async function fetcher(url, method = 'GET') {
+  const res = await fetch(url, { method })
 
   // If the status code is not in the range 200-299,
   // we still try to parse and throw it.

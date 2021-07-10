@@ -64,7 +64,7 @@ public class UserService {
         Optional<DefaultOAuth2User> oAuth2USer = getOAuth2USer();
 
         if (model != null && oAuth2USer.isPresent()) {
-            model.setName(oAuth2USer.get().getName());
+            model.setName((String) oAuth2USer.get().getAttributes().get("given_name"));
             return model;
         }
 
