@@ -5,6 +5,7 @@ import xor from 'lodash.xor'
 import Nav from './Nav'
 import Controls from './Controls'
 import Movie from './Movie'
+import Loader from './Loader'
 
 import {isMovieWatched} from './utils'
 
@@ -21,6 +22,7 @@ function App() {
 
   const [genreFilter, setGenreFilter] = useState([])
   const [hideWatched, setHideWatched] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const genres = createGenresArray(movies)
 
@@ -37,12 +39,15 @@ function App() {
           genreFilter={genreFilter}
           updateGenreFilter={updateGenreFilter}
           setHideWatched={setHideWatched}
-          hideWatched={hideWatched}/>
+          hideWatched={hideWatched}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}/>
         <div className="row">
-          {!movies && <div className="col-12">Loading Movies</div>}
+          {!movies && <Loader classes="col-sm-1 offset-sm-5"/>}
           {movies
             ?.filter(movie => genreFilter.length === 0 || genreFilter.every(genre => movie.genre.includes(genre)))
             .filter(movie => !(hideWatched && isMovieWatched(watchList, movie.title)))
+            .filter(movie => new RegExp(searchTerm, 'ig').test(movie.title))
             .map(movie => <Movie key={movie.title} movie={movie}/>)}
         </div>
       </main>
