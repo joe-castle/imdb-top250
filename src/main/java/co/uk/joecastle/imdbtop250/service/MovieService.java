@@ -1,9 +1,18 @@
 package co.uk.joecastle.imdbtop250.service;
 
+import co.uk.joecastle.imdbtop250.converter.MovieWatchListEntityToMovieWatchListModel;
+import co.uk.joecastle.imdbtop250.entity.MovieWatchList;
+import co.uk.joecastle.imdbtop250.entity.User;
+import co.uk.joecastle.imdbtop250.entity.Watched;
 import co.uk.joecastle.imdbtop250.model.Movie;
+import co.uk.joecastle.imdbtop250.model.MovieWatchListModel;
+import co.uk.joecastle.imdbtop250.model.UserModel;
+import co.uk.joecastle.imdbtop250.respository.MovieWatchListRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -16,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class MovieService {
 
@@ -26,6 +36,17 @@ public class MovieService {
             "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=151&ref_=adv_nxt",
             "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=201&ref_=adv_nxt",
             "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=251&ref_=adv_nxt");
+
+    private final UserService userService;
+    private final MovieWatchListRepository movieWatchListRepository;
+    private final MovieWatchListEntityToMovieWatchListModel movieWatchListEntityToMovieWatchListModel;
+
+    @Autowired
+    public MovieService(UserService userService, MovieWatchListRepository movieWatchListRepository, MovieWatchListEntityToMovieWatchListModel movieWatchListEntityToMovieWatchListModel) {
+        this.userService = userService;
+        this.movieWatchListRepository = movieWatchListRepository;
+        this.movieWatchListEntityToMovieWatchListModel = movieWatchListEntityToMovieWatchListModel;
+    }
 
     @Cacheable("movies")
     public List<Movie> getMovies() {
@@ -97,6 +118,39 @@ public class MovieService {
         }
 
         return m.appendTail(sb).toString();
+    }
+
+    public MovieWatchListModel markFilmWatchedOrNotWatched(String movie) {
+        try {
+            User user = userService.getUser();
+            MovieWatchList watchList = movieWatchListRepository.findByUserId(user.getId());
+
+            Watched newWatched = Watched.builder().title(movie).watched(true).build();
+            int index = watchList.getWatchedList().indexOf(newWatched);
+
+            if (index > -1) {
+                Watched amendWatched = watchList.getWatchedList().get(index);
+                amendWatched.setWatched(!amendWatched.getWatched());
+            } else {
+                watchList.getWatchedList().add(newWatched);
+            }
+
+            return movieWatchListEntityToMovieWatchListModel.convert(movieWatchListRepository.save(watchList));
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public MovieWatchListModel getMovieWatchListModel() {
+        User user = userService.getUser();
+
+        if (user != null) {
+            return movieWatchListEntityToMovieWatchListModel
+                    .convert(movieWatchListRepository.findByUserId(user.getId()));
+        }
+
+        return null;
     }
 
 }

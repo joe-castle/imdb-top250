@@ -3,9 +3,10 @@ package co.uk.joecastle.imdbtop250.controller;
 import co.uk.joecastle.imdbtop250.model.UserModel;
 import co.uk.joecastle.imdbtop250.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/user")
@@ -19,7 +20,7 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<UserModel> getUser() {
+    public ResponseEntity<UserModel> getUserAndWatchList() {
         UserModel userModel = userService.getUserModel();
 
         if (userModel != null) {
@@ -27,11 +28,6 @@ public class UserController {
         } else {
             return ResponseEntity.noContent().build();
         }
-    }
-
-    @PostMapping(value = "/movie/{movie}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public UserModel makeFilmWatchedOrNotWatched(@PathVariable String movie) {
-        return userService.makeFilmWatchedOrNotWatched(movie);
     }
 
 }

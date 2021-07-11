@@ -5,10 +5,14 @@ import co.uk.joecastle.imdbtop250.entity.User;
 import co.uk.joecastle.imdbtop250.entity.Watched;
 import co.uk.joecastle.imdbtop250.model.UserModel;
 import co.uk.joecastle.imdbtop250.respository.UserRepository;
-import co.uk.joecastle.imdbtop250.util.WatchedList;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
@@ -30,33 +34,20 @@ public class UserService {
         this.userEntityToUserModel = userEntityToUserModel;
     }
 
-    public UserModel makeFilmWatchedOrNotWatched(String movie) {
-        try {
-            User user = getUser();
+    @Bean
+    public ApplicationListener<AuthenticationSuccessEvent> saveUserOnAuthentication() {
+        return event -> {
+            DefaultOAuth2User oAuth2User = (DefaultOAuth2User) event.getAuthentication().getPrincipal();
+
+            User user = getUser(oAuth2User);
 
             if (user == null) {
-                return userEntityToUserModel.convert(userRepository.save(User
-                        .builder()
-                        .email(getEmail())
-                        .watchedList(new WatchedList(List.of(Watched.builder().title(movie).watched(true).build())))
-                        .build()));
-            } else {
-                Watched newWatched = Watched.builder().title(movie).watched(true).build();
-                int index = user.getWatchedList().indexOf(newWatched);
-
-                if (index > -1) {
-                    Watched amendWatched = user.getWatchedList().get(index);
-                    amendWatched.setWatched(!amendWatched.getWatched());
-                } else {
-                    user.getWatchedList().add(newWatched);
-                }
-
-                return userEntityToUserModel.convert(userRepository.save(user));
+                userRepository.save(User.builder()
+                    .email(getEmail(Optional.of(oAuth2User)))
+                    .name((String) oAuth2User.getAttributes().get("given_name"))
+                    .build());
             }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
+        };
     }
 
     public UserModel getUserModel() {
@@ -64,19 +55,42 @@ public class UserService {
         Optional<DefaultOAuth2User> oAuth2USer = getOAuth2USer();
 
         if (model != null && oAuth2USer.isPresent()) {
-            model.setName((String) oAuth2USer.get().getAttributes().get("given_name"));
             return model;
         }
 
         return null;
     }
 
-    private User getUser() {
+//    public UserModel getUserAndWatchList() {
+////        LookupOperation.newLookup()
+////                .from("user")
+//
+//        LookupOperation aggregation = Aggregation
+//                .lookup("movieWatchList", "userId", "id", "watchList");
+////        UserModel model = userEntityToUserModel.convert(getUser());
+////        Optional<DefaultOAuth2User> oAuth2USer = getOAuth2USer();
+////
+////        if (model != null && oAuth2USer.isPresent()) {
+////            return model;
+////        }
+////
+////        return null;
+//    }
+
+    public User getUser() {
         return userRepository.findByEmail(getEmail());
     }
 
+    private User getUser(DefaultOAuth2User oAuth2User) {
+        return userRepository.findByEmail(getEmail(Optional.of(oAuth2User)));
+    }
+
     private String getEmail() {
-        return getOAuth2USer()
+        return getEmail(getOAuth2USer());
+    }
+
+    private String getEmail(Optional<DefaultOAuth2User> oAuth2User) {
+        return oAuth2User
                 .map(defaultOAuth2User -> (String) defaultOAuth2User.getAttributes().get("email"))
                 .orElse(null);
     }
