@@ -11,9 +11,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
-                .antMatchers("/api/v1/movies/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/v1/movies").permitAll()
                 .antMatchers("/api/v1/user").permitAll()
-                .antMatchers(HttpMethod.POST, "/api/v1/user/movie/**").authenticated()
+                .antMatchers("/api/v1/movies/**").authenticated()
                 .and()
                 .oauth2Login(config -> config.defaultSuccessUrl("/", true))
                 .logout().logoutSuccessUrl("/")

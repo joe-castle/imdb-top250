@@ -1,22 +1,20 @@
 package co.uk.joecastle.imdbtop250.converter;
 
 import co.uk.joecastle.imdbtop250.entity.MovieWatchList;
-import co.uk.joecastle.imdbtop250.entity.User;
-import co.uk.joecastle.imdbtop250.model.MovieWatchListModel;
-import co.uk.joecastle.imdbtop250.model.UserModel;
+import co.uk.joecastle.imdbtop250.entity.Watched;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
-public class MovieWatchListEntityToMovieWatchListModel implements Converter<MovieWatchList, MovieWatchListModel> {
+public class MovieWatchListEntityToMovieWatchListModel implements Converter<MovieWatchList, List<Watched>> {
 
     @Override
-    public MovieWatchListModel convert(MovieWatchList source) {
+    public List<Watched> convert(MovieWatchList source) {
         return source == null
                 ? null
-                : MovieWatchListModel.builder()
-                    .watchedList(source.getWatchedList())
-                    .build();
+                : source.getWatchedList();
     }
 
 }

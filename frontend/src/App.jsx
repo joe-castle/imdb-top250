@@ -17,7 +17,8 @@ function createGenresArray(movies) {
 
 function App() {
   const {data: movies} = useSWR('/api/v1/movies');
-  const {data: user} = useSWR("/api/v1/user")
+  const {data: watchList} = useSWR("/api/v1/movies/watchList")
+
   const [genreFilter, setGenreFilter] = useState([])
   const [hideWatched, setHideWatched] = useState(false)
 
@@ -41,7 +42,7 @@ function App() {
           {!movies && <div className="col-12">Loading Movies</div>}
           {movies
             ?.filter(movie => genreFilter.length === 0 || genreFilter.every(genre => movie.genre.includes(genre)))
-            .filter(movie => !(hideWatched && isMovieWatched(user?.watchedList, movie.title)))
+            .filter(movie => !(hideWatched && isMovieWatched(watchList, movie.title)))
             .map(movie => <Movie key={movie.title} movie={movie}/>)}
         </div>
       </main>

@@ -12,8 +12,7 @@ public class UserEntityToUserModel implements Converter<User, UserModel> {
     public UserModel convert(User source) {
         return source != null
                 ? UserModel.builder()
-                .name(source.getFirstName())
-                .watchedList(source.getWatchedList())
+                .name(source.getName())
                 .build()
                 : null;
     }

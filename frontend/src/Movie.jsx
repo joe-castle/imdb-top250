@@ -7,23 +7,21 @@ import {fetcher, isMovieWatched} from './utils'
 import styles from './Movie.module.css'
 
 function Movie({movie}) {
-  const {data: user, mutate} = useSWR("/api/v1/user")
+  const {data: user} = useSWR("/api/v1/user");
+  const {data: watchList = [], mutate} = useSWR("/api/v1/movies/watchList")
 
   function updateMovieWatchedStatus(title) {
-    if (user?.name) {
-      const index = user.watchedList.findIndex(watched => watched.title === title)
+    if (user) {
+      const index = watchList.findIndex(watched => watched.title === title)
 
-      mutate({
-        name: user.name,
-        watchedList: [
-          ...user.watchedList.slice(0, index),
-          { title, watched: !user.watchedList[index].watched },
-          ...user.watchedList.slice(index + 1)
-        ]
-      }, false)
+      mutate([
+          ...watchList.slice(0, index),
+          { title, watched: watchList[index] ? !watchList[index].watched : true },
+          ...watchList.slice(index + 1)
+        ], false)
 
       mutate(() => {
-        return fetcher(`/api/v1/user/movie/${title}`,  'POST')
+        return fetcher(`/api/v1/movies/${title}`,  'POST')
       })
     }
   }
@@ -31,7 +29,7 @@ function Movie({movie}) {
   return (
     <div className={classNames("col-sm-8 offset-sm-2", {
       [styles.movie]: true,
-      [styles.watched]: isMovieWatched(user?.watchedList, movie.title)
+      [styles.watched]: isMovieWatched(watchList, movie.title)
     })}
          id={movie.title}
          onClick={() => updateMovieWatchedStatus(movie.title)}>

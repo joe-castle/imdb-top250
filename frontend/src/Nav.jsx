@@ -4,7 +4,7 @@ import useSWR from "swr";
 import styles from './Nav.module.css'
 
 function Nav() {
-  let {data: user} = useSWR("/api/v1/user");
+  const {data: user} = useSWR("/api/v1/user");
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-3">

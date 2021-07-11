@@ -14,6 +14,6 @@ export async function fetcher(url, method = 'GET') {
   return res.json()
 }
 
-export function isMovieWatched(watchedList, title) {
-  return watchedList?.some(movie => movie.title === title && movie.watched === true)
+export function isMovieWatched(watchList, title) {
+  return watchList?.some(movie => movie.title === title && movie.watched === true)
 }

@@ -1,8 +1,7 @@
 package co.uk.joecastle.imdbtop250.controller;
 
+import co.uk.joecastle.imdbtop250.entity.Watched;
 import co.uk.joecastle.imdbtop250.model.Movie;
-import co.uk.joecastle.imdbtop250.model.MovieWatchListModel;
-import co.uk.joecastle.imdbtop250.model.UserModel;
 import co.uk.joecastle.imdbtop250.service.MovieService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +27,13 @@ public class MovieController {
         return movieService.getMovies();
     }
 
+    @GetMapping("/watchList")
+    public List<Watched> getMovieWatchList() {
+        return movieService.getMovieWatchListModel();
+    }
+
     @PostMapping(value = "/{movie}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public MovieWatchListModel markFilmWatchedOrNotWatched(@PathVariable String movie) {
+    public List<Watched> markFilmWatchedOrNotWatched(@PathVariable String movie) {
         return movieService.markFilmWatchedOrNotWatched(movie);
     }
 

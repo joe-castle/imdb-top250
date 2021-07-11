@@ -5,7 +5,8 @@ import classNames from 'classnames'
 import styles from './Controls.module.css'
 
 function Controls({genres, updateGenreFilter, genreFilter, setHideWatched, hideWatched}) {
-  const {data: user} = useSWR("/api/v1/user")
+  const {data: user} = useSWR("/api/v1/user");
+  const {data: watchList} = useSWR("/api/v1/movies/watchList")
 
   return (
     <div className="row mb-3">
@@ -13,7 +14,7 @@ function Controls({genres, updateGenreFilter, genreFilter, setHideWatched, hideW
         {!!user && <>
             <div>
               <strong>Watched: </strong>
-              <span id="watchedCount">{(user.watchedList?.length) || 0}</span>
+              <span id="watchedCount">{(watchList?.filter(watched => watched.watched).length) || 0}</span>
               <span> / </span>
               <span>250</span>
             </div>

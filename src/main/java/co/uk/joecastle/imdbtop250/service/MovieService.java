@@ -5,8 +5,6 @@ import co.uk.joecastle.imdbtop250.entity.MovieWatchList;
 import co.uk.joecastle.imdbtop250.entity.User;
 import co.uk.joecastle.imdbtop250.entity.Watched;
 import co.uk.joecastle.imdbtop250.model.Movie;
-import co.uk.joecastle.imdbtop250.model.MovieWatchListModel;
-import co.uk.joecastle.imdbtop250.model.UserModel;
 import co.uk.joecastle.imdbtop250.respository.MovieWatchListRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -18,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -120,10 +119,16 @@ public class MovieService {
         return m.appendTail(sb).toString();
     }
 
-    public MovieWatchListModel markFilmWatchedOrNotWatched(String movie) {
+    public List<Watched> markFilmWatchedOrNotWatched(String movie) {
         try {
             User user = userService.getUser();
             MovieWatchList watchList = movieWatchListRepository.findByUserId(user.getId());
+
+            if (watchList == null) {
+                watchList = MovieWatchList.builder()
+                        .userId(user.getId())
+                        .watchedList(new ArrayList<>()).build();
+            }
 
             Watched newWatched = Watched.builder().title(movie).watched(true).build();
             int index = watchList.getWatchedList().indexOf(newWatched);
@@ -142,7 +147,7 @@ public class MovieService {
         }
     }
 
-    public MovieWatchListModel getMovieWatchListModel() {
+    public List<Watched> getMovieWatchListModel() {
         User user = userService.getUser();
 
         if (user != null) {
