@@ -26,6 +26,7 @@ function Movie({movie}) {
     }
   }
 
+  // TODO: Fix propagation of link from triggering "Watched"
   return (
     <div className={classNames("col-sm-8 offset-sm-2", {
       [styles.movie]: true,
