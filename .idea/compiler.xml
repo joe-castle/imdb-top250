@@ -10,9 +10,6 @@
         <module name="imdb-top250" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="imdb-top250" target="14" />
-    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">

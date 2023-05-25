@@ -10,13 +10,9 @@
     </parent>
 	<groupId>co.uk.joecastle</groupId>
 	<artifactId>imdb-top250</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>imdb-top250</name>
 	<description>List tracker for watched IMDB Top 250 films</description>
-
-	<properties>
-		<java.version>14</java.version>
-	</properties>
 
     <dependencies>
         <dependency>
