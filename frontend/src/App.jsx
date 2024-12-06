@@ -17,7 +17,7 @@ function createGenresArray(movies) {
 }
 
 function App() {
-  const {data: movies} = useSWR('/api/v1/movies');
+  const {data: movies, error} = useSWR('/api/v1/movies');
   const {data: watchList} = useSWR("/api/v1/movies/watchList")
 
   const [genreFilter, setGenreFilter] = useState([])
@@ -43,7 +43,10 @@ function App() {
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}/>
         <div className="row">
-          {!movies && <Loader classes="col-sm-1 offset-sm-5"/>}
+          {!movies && !error && <Loader classes="col-sm-1 offset-sm-5"/>}
+          {error && <div className="alert alert-danger col-sm-12 col-md-8 offset-md-2" role="alert">
+            Error fetching movies!
+          </div>}
           {movies
             ?.filter(movie => genreFilter.length === 0 || genreFilter.every(genre => movie.genre.includes(genre)))
             .filter(movie => !(hideWatched && isMovieWatched(watchList, movie.title)))

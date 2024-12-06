@@ -8,3 +8,4 @@ spring:
 logging:
   level:
     root: INFO
+    co.uk.joecastle.imdbtop250: debug

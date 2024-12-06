@@ -2,6 +2,7 @@ package co.uk.joecastle.imdbtop250.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,6 +30,7 @@ public class Movie {
 
     @Getter
     @Setter
+    @Builder
     @AllArgsConstructor
     public static class Person {
 
