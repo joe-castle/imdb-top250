@@ -1,9 +1,8 @@
 package co.uk.joecastle.imdbtop250.entity;
 
+import java.util.List;
 import lombok.*;
 import org.springframework.data.annotation.Id;
-
-import java.util.List;
 
 @Builder
 @Getter
@@ -12,10 +11,8 @@ import java.util.List;
 @NoArgsConstructor
 public class MovieWatchList {
 
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String userId;
-    private List<Watched> watchedList;
-
+  private String userId;
+  private List<Watched> watchedList;
 }

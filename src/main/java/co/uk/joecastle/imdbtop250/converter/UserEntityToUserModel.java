@@ -8,13 +8,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserEntityToUserModel implements Converter<User, UserModel> {
 
-    @Override
-    public UserModel convert(User source) {
-        return source != null
-                ? UserModel.builder()
-                .name(source.getName())
-                .build()
-                : null;
-    }
-
+  @Override
+  public UserModel convert(User source) {
+    return source != null ? UserModel.builder().name(source.getName()).build() : null;
+  }
 }

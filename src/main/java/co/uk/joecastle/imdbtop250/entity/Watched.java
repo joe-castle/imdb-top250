@@ -10,9 +10,7 @@ import lombok.*;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Watched {
 
-    @EqualsAndHashCode.Include
-    private String title;
+  @EqualsAndHashCode.Include private String title;
 
-    private Boolean watched;
-
+  private Boolean watched;
 }

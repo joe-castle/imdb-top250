@@ -8,8 +8,7 @@ import org.springframework.cache.annotation.EnableCaching;
 @SpringBootApplication
 public class ImdbTop250Application {
 
-	public static void main(String[] args) {
-		SpringApplication.run(ImdbTop250Application.class, args);
-	}
-
+  public static void main(String[] args) {
+    SpringApplication.run(ImdbTop250Application.class, args);
+  }
 }

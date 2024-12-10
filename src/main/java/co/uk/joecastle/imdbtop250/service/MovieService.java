@@ -4,158 +4,172 @@ import co.uk.joecastle.imdbtop250.converter.MovieWatchListEntityToMovieWatchList
 import co.uk.joecastle.imdbtop250.entity.MovieWatchList;
 import co.uk.joecastle.imdbtop250.entity.User;
 import co.uk.joecastle.imdbtop250.entity.Watched;
+import co.uk.joecastle.imdbtop250.exception.MovieScrapingException;
 import co.uk.joecastle.imdbtop250.model.Movie;
 import co.uk.joecastle.imdbtop250.respository.MovieWatchListRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class MovieService {
 
-    private static final String IMDB_TOP250_URI = "https://www.imdb.com/chart/top/";
-    private static final List<String> ENHANCED_URIS = List.of("https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&view=advanced",
-            "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=51&ref_=adv_nxt",
-            "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=101&ref_=adv_nxt",
-            "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=151&ref_=adv_nxt",
-            "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=201&ref_=adv_nxt",
-            "https://www.imdb.com/search/title/?groups=top_250&sort=user_rating&start=251&ref_=adv_nxt");
+  private static final String IMDB_BASE_URL = "https://www.imdb.com";
+  private static final String IMDB_TOP250_URI = IMDB_BASE_URL + "/chart/top/?sort=rank%2asc";
 
-    private final UserService userService;
-    private final MovieWatchListRepository movieWatchListRepository;
-    private final MovieWatchListEntityToMovieWatchListModel movieWatchListEntityToMovieWatchListModel;
+  private final UserService userService;
+  private final MovieWatchListRepository movieWatchListRepository;
+  private final MovieWatchListEntityToMovieWatchListModel movieWatchListEntityToMovieWatchListModel;
+  private final ObjectMapper mapper;
 
-    @Autowired
-    public MovieService(UserService userService, MovieWatchListRepository movieWatchListRepository, MovieWatchListEntityToMovieWatchListModel movieWatchListEntityToMovieWatchListModel) {
-        this.userService = userService;
-        this.movieWatchListRepository = movieWatchListRepository;
-        this.movieWatchListEntityToMovieWatchListModel = movieWatchListEntityToMovieWatchListModel;
+  @Cacheable("moviesCache")
+  public List<Movie> getMovies() {
+    try {
+      String cssQuery = "script[type='application/ld+json']";
+
+      List<Movie> movies =
+          Jsoup.connect(IMDB_TOP250_URI)
+              .header(HttpHeaders.ACCEPT_LANGUAGE, "en-GB")
+              .get()
+              .select(cssQuery)
+              .stream()
+              .flatMap(this::getMovieInformation)
+              .collect(Collectors.toList());
+
+      if (CollectionUtils.isEmpty(movies)) {
+        throw new MovieScrapingException(
+            "Unable to get top 250 movies from " + IMDB_TOP250_URI + " with CSS query " + cssQuery);
+      }
+
+      return movies;
+    } catch (IOException e) {
+      throw new MovieScrapingException("error getting titles with uri: " + IMDB_TOP250_URI, e);
+    }
+  }
+
+  private Stream<Movie> getMovieInformation(Element element) {
+    try {
+      return StreamSupport.stream(
+              mapper.readTree(element.data()).get("itemListElement").spliterator(), false)
+          .map(jsonNode -> jsonNode.get("item"))
+          .map(
+              jsonNode ->
+                  Movie.builder()
+                      .title(jsonNode.get("name").textValue())
+                      .certificate(
+                          Optional.ofNullable(jsonNode.get("contentRating"))
+                              .map(JsonNode::textValue)
+                              .orElse("X"))
+                      .rating(jsonNode.at("/aggregateRating/ratingValue").doubleValue())
+                      .posterUrl(jsonNode.get("image").textValue())
+                      .genre(jsonNode.get("genre").textValue())
+                      .description(jsonNode.get("description").textValue())
+                      .imdbUrl(jsonNode.get("url").textValue())
+                      .build())
+          .map(
+              movie -> {
+                try {
+                  log.debug("Getting movie info for {}", movie.getTitle());
+
+                  String data =
+                      Jsoup.connect(movie.getImdbUrl())
+                          .header(HttpHeaders.ACCEPT_LANGUAGE, "en-GB")
+                          .get()
+                          .select("script[id='__NEXT_DATA__']")
+                          .get(0)
+                          .data();
+
+                  JsonNode pageJson = mapper.readTree(data);
+
+                  movie.setYear(
+                      pageJson.at("/props/pageProps/aboveTheFoldData/releaseYear/year").intValue());
+                  movie.setTime(
+                      pageJson
+                          .at(
+                              "/props/pageProps/aboveTheFoldData/runtime/displayableProperty/value/plainText")
+                          .textValue());
+                  JsonNode credits =
+                      pageJson.at("/props/pageProps/aboveTheFoldData/principalCredits");
+                  getPersonStream(credits, "Directors?").findFirst().ifPresent(movie::setDirector);
+
+                  movie.setStars(getPersonStream(credits, "Stars").collect(Collectors.toList()));
+
+                  return movie;
+                } catch (IOException e) {
+                  throw new MovieScrapingException(
+                      "Error fetching movie data with url: " + movie.getImdbUrl(), e);
+                }
+              });
+    } catch (JsonProcessingException e) {
+      throw new MovieScrapingException("error parsing json: " + element.text(), e);
+    }
+  }
+
+  private static Stream<Movie.Person> getPersonStream(JsonNode credits, String personTypeRegex) {
+    return StreamSupport.stream(credits.spliterator(), false)
+        .filter(jsonNode -> jsonNode.at("/category/text").textValue().matches(personTypeRegex))
+        .flatMap(jsonNode -> StreamSupport.stream(jsonNode.get("credits").spliterator(), false))
+        .map(
+            jsonNode ->
+                Movie.Person.builder()
+                    .name(jsonNode.at("/name/nameText/text").textValue())
+                    .url(IMDB_BASE_URL + "/name/" + jsonNode.at("/name/id").textValue())
+                    .build());
+  }
+
+  public List<Watched> markFilmWatchedOrNotWatched(String movie) {
+    try {
+      User user = userService.getUser();
+      MovieWatchList watchList = movieWatchListRepository.findByUserId(user.getId());
+
+      if (watchList == null) {
+        watchList =
+            MovieWatchList.builder().userId(user.getId()).watchedList(new ArrayList<>()).build();
+      }
+
+      Watched newWatched = Watched.builder().title(movie).watched(true).build();
+      int index = watchList.getWatchedList().indexOf(newWatched);
+
+      if (index > -1) {
+        Watched amendWatched = watchList.getWatchedList().get(index);
+        amendWatched.setWatched(!amendWatched.getWatched());
+      } else {
+        watchList.getWatchedList().add(newWatched);
+      }
+
+      return movieWatchListEntityToMovieWatchListModel.convert(
+          movieWatchListRepository.save(watchList));
+    } catch (Exception e) {
+      log.error(e.getMessage(), e);
+      return null;
+    }
+  }
+
+  public List<Watched> getMovieWatchListModel() {
+    User user = userService.getUser();
+
+    if (user != null) {
+      return movieWatchListEntityToMovieWatchListModel.convert(
+          movieWatchListRepository.findByUserId(user.getId()));
     }
 
-    @Cacheable("movies")
-    public List<Movie> getMovies() {
-        try {
-            Map<String, Movie> enhancedMovies = getEnhancedMovies();
-
-            return Jsoup.connect(IMDB_TOP250_URI)
-                    .header(HttpHeaders.ACCEPT_LANGUAGE, "en-GB")
-                    .get()
-                    .select(".lister-list tr")
-                    .stream()
-                    .map(element -> {
-                        Movie movie = enhancedMovies.get(element.select(".titleColumn a").get(0).text());
-                        movie.setPosition(Integer.parseInt(element.select(".titleColumn").get(0).text().replaceAll("\\..++", "")));
-                        movie.setRating(Double.parseDouble(element.select(".imdbRating strong").get(0).text()));
-                        return movie;
-                    })
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("error getting titles with uri: {uri}");
-        }
-    }
-
-    @Cacheable("enhancedMovies")
-    public Map<String, Movie> getEnhancedMovies() {
-        return ENHANCED_URIS
-                .stream()
-                .map(uri -> {
-                    try {
-                        return Jsoup.connect(uri)
-                                .header(HttpHeaders.ACCEPT_LANGUAGE, "en-GB")
-                                .get()
-                                .select(".lister-item");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        throw new RuntimeException("error getting titles with uri: {uri}");
-                    }
-                })
-                .flatMap(elements -> elements.stream().map(element -> {
-                    Movie movie = new Movie();
-                    Element title = element.select(".lister-item-header a").get(0);
-                    movie.setTitle(title.text());
-                    movie.setImdbUrl("https://www.imdb.com" + title.attr("href"));
-                    movie.setYear(Integer.parseInt(element.select(".lister-item-year").get(0).text().replaceAll(".+(\\d{4}).+", "$1")));
-                    Elements content = element.select(".lister-item-content p");
-                    movie.setDescription(content.get(1).text());
-                    movie.setPosterUrl(parsePosterUrl(element.select(".lister-item-image img").get(0).attr("loadlate")));
-                    movie.setCertificate(element.select(".certificate").isEmpty() ? "X" : element.select(".certificate").get(0).text());
-                    movie.setTime(element.select(".runtime").get(0).text());
-                    movie.setGenre(element.select(".genre").get(0).text());
-                    Elements people = content.select("a");
-                    movie.setDirector(new Movie.Person(people.get(0).text(), "https://www.imdb.com" + people.get(0).attr("href")));
-                    movie.setStars(people.subList(1, people.size()).stream().map(person ->
-                            new Movie.Person(person.text(), "https://www.imdb.com" + person.attr("href"))).collect(Collectors.toList()));
-                    return movie;
-                }))
-                .collect(Collectors.toMap(Movie::getTitle, Function.identity()));
-    }
-
-    private String parsePosterUrl(String url) {
-        Matcher m = Pattern.compile("([XY])\\d{2}_CR(\\d),0,\\d{2},\\d{2}").matcher(url);
-        StringBuilder sb = new StringBuilder();
-
-        while (m.find()) {
-            m.appendReplacement(sb, m.group(1).equals("X")
-                    ? m.group(1) + "182_CR" + m.group(2) + ",0,182,268"
-                    : m.group(1) + "268_CR" + m.group(2) + ",0,182,268");
-        }
-
-        return m.appendTail(sb).toString();
-    }
-
-    public List<Watched> markFilmWatchedOrNotWatched(String movie) {
-        try {
-            User user = userService.getUser();
-            MovieWatchList watchList = movieWatchListRepository.findByUserId(user.getId());
-
-            if (watchList == null) {
-                watchList = MovieWatchList.builder()
-                        .userId(user.getId())
-                        .watchedList(new ArrayList<>()).build();
-            }
-
-            Watched newWatched = Watched.builder().title(movie).watched(true).build();
-            int index = watchList.getWatchedList().indexOf(newWatched);
-
-            if (index > -1) {
-                Watched amendWatched = watchList.getWatchedList().get(index);
-                amendWatched.setWatched(!amendWatched.getWatched());
-            } else {
-                watchList.getWatchedList().add(newWatched);
-            }
-
-            return movieWatchListEntityToMovieWatchListModel.convert(movieWatchListRepository.save(watchList));
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return null;
-        }
-    }
-
-    public List<Watched> getMovieWatchListModel() {
-        User user = userService.getUser();
-
-        if (user != null) {
-            return movieWatchListEntityToMovieWatchListModel
-                    .convert(movieWatchListRepository.findByUserId(user.getId()));
-        }
-
-        return null;
-    }
-
+    return null;
+  }
 }
