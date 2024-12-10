@@ -1,13 +1,13 @@
 body {
-    background: rgb(226, 225, 224);
+  background: rgb(226, 225, 224);
 }
 
 .btn-outline-primary:active {
-    color: #007bff !important;
-    background: none !important;
+  color: #007bff !important;
+  background: none !important;
 }
 
 .btn-outline-info:active {
-    color: #17a2b8 !important;
-    background: none !important;
+  color: #17a2b8 !important;
+  background: none !important;
 }

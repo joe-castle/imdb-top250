@@ -1,7 +1,6 @@
 spring:
   session:
     store-type: mongodb
-
   profiles:
     active: dev
 

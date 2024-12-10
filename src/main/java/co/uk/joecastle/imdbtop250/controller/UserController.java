@@ -12,22 +12,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/user")
 public class UserController {
 
-    private final UserService userService;
+  private final UserService userService;
 
-    @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
+  @Autowired
+  public UserController(UserService userService) {
+    this.userService = userService;
+  }
+
+  @GetMapping
+  public ResponseEntity<UserModel> getUserAndWatchList() {
+    UserModel userModel = userService.getUserModel();
+
+    if (userModel != null) {
+      return ResponseEntity.ok(userModel);
+    } else {
+      return ResponseEntity.noContent().build();
     }
-
-    @GetMapping
-    public ResponseEntity<UserModel> getUserAndWatchList() {
-        UserModel userModel = userService.getUserModel();
-
-        if (userModel != null) {
-            return ResponseEntity.ok(userModel);
-        } else {
-            return ResponseEntity.noContent().build();
-        }
-    }
-
+  }
 }
